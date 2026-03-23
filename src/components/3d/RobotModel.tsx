@@ -79,10 +79,13 @@ const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ 
 
 const JointGroup: React.FC<{ 
   joint: URDFJoint;
+  jointValues: Map<string, number>;
   children: React.ReactNode;
-}> = ({ joint, children }) => {
+}> = ({ joint, jointValues, children }) => {
   const urdfPos = joint.origin?.xyz || { x: 0, y: 0, z: 0 };
   const urdfRot = joint.origin?.rpy || { x: 0, y: 0, z: 0 };
+  
+  const jointValue = jointValues.get(joint.name) || 0;
   
   const threePos = {
     x: -urdfPos.y,
@@ -96,13 +99,26 @@ const JointGroup: React.FC<{
     z: -urdfRot.x
   };
   
+  const jointAxis = joint.axis || { x: 0, y: 0, z: 1 };
+  const threeAxis = {
+    x: -jointAxis.y,
+    y: jointAxis.z,
+    z: -jointAxis.x
+  };
+  
   return (
     <group 
-      key={`joint-${joint.name}-${JSON.stringify(joint.origin)}`}
+      key={`joint-${joint.name}-${JSON.stringify(joint.origin)}-${jointValue}`}
       position={[threePos.x, threePos.y, threePos.z]} 
       rotation={[threeRot.x, threeRot.y, threeRot.z]}
     >
-      {children}
+      {joint.type === 'revolute' || joint.type === 'continuous' || joint.type === 'prismatic' ? (
+        <group rotation={[threeAxis.x * jointValue, threeAxis.y * jointValue, threeAxis.z * jointValue]}>
+          {children}
+        </group>
+      ) : (
+        children
+      )}
     </group>
   );
 };
@@ -129,7 +145,7 @@ export const RobotModel: React.FC<RobotModelProps> = ({ robotState }) => {
         ))}
         
         {childJoints.map(joint => (
-          <JointGroup key={joint.name} joint={joint}>
+          <JointGroup key={joint.name} joint={joint} jointValues={robotState.jointValues}>
             {renderLink(joint.child)}
           </JointGroup>
         ))}
@@ -142,7 +158,7 @@ export const RobotModel: React.FC<RobotModelProps> = ({ robotState }) => {
   }
 
   return (
-    <group key={`robot-${robotState.links.length}-${robotState.joints.length}`}>
+    <group key={`robot-${robotState.links.length}-${robotState.joints.length}-${Array.from(robotState.jointValues.entries()).join('-')}`}>
       {renderLink(robotState.rootLink)}
     </group>
   );
