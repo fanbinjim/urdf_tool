@@ -1,11 +1,14 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface FileUploaderProps {
   onFileLoad: (content: string, fileName: string, files?: File[]) => void;
 }
 
 export const FileUploader: React.FC<FileUploaderProps> = ({ onFileLoad }) => {
+  const { t } = useLanguage();
+  
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
@@ -54,16 +57,16 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ onFileLoad }) => {
           </svg>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             {isDragActive ? (
-              <span className="text-purple-600 dark:text-purple-400">Drop the URDF file here</span>
+              <span className="text-purple-600 dark:text-purple-400">{t.fileUploader.dropFile}</span>
             ) : (
               <>
-                Drag and drop a URDF file here, or{' '}
-                <span className="text-purple-600 dark:text-purple-400">browse</span>
+                {t.fileUploader.dragDrop}{' '}
+                <span className="text-purple-600 dark:text-purple-400">{t.fileUploader.browse}</span>
               </>
             )}
           </p>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-            Supports .urdf, .xml, and .zip files
+            {t.fileUploader.supports}
           </p>
         </div>
       </div>

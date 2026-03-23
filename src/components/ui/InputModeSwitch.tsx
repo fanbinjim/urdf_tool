@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 import type { InputMode } from '../../types';
 
 interface InputModeSwitchProps {
@@ -7,6 +8,8 @@ interface InputModeSwitchProps {
 }
 
 export const InputModeSwitch: React.FC<InputModeSwitchProps> = ({ mode, onModeChange }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
       <button
@@ -17,7 +20,7 @@ export const InputModeSwitch: React.FC<InputModeSwitchProps> = ({ mode, onModeCh
             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
         }`}
       >
-        File Upload
+        {t.inputMode.file}
       </button>
       <button
         onClick={() => onModeChange('text')}
@@ -27,7 +30,7 @@ export const InputModeSwitch: React.FC<InputModeSwitchProps> = ({ mode, onModeCh
             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
         }`}
       >
-        Text Editor
+        {t.inputMode.text}
       </button>
     </div>
   );

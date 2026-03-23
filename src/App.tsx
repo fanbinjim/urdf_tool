@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RobotProvider, useRobot } from './context/RobotContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { URDFParser } from './parsers/urdfParser';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -13,7 +14,8 @@ import { RobotScene } from './components/3d/RobotScene';
 import type { InputMode } from './types';
 
 const AppContent: React.FC = () => {
-  const { setURDFInput, setRobotState, robotState } = useRobot();
+  const { setURDFInput, setRobotState, robotState, urdfInput } = useRobot();
+  const { t } = useLanguage();
   const [inputMode, setInputMode] = useState<InputMode>('file');
   const [textContent, setTextContent] = useState('');
 
@@ -35,22 +37,24 @@ const AppContent: React.FC = () => {
       });
 
       setURDFInput({
-        mode: 'file',
+        mode: 'text',
         content,
         files,
         fileName,
       });
 
       setTextContent(content);
+      setInputMode('text');
     } catch (error) {
       console.error('Failed to parse URDF:', error);
-      alert('Failed to parse URDF file. Please check the file format.');
+      alert(t.alerts.fileFormatError);
     }
   };
 
-  const handleTextLoad = () => {
+  const handleTextLoad = (content?: string) => {
+    const contentToParse = content || textContent;
     try {
-      const parser = new URDFParser(textContent);
+      const parser = new URDFParser(contentToParse);
       const { links, joints, rootLink } = parser.parse();
       
       const jointValues = new Map<string, number>();
@@ -67,11 +71,11 @@ const AppContent: React.FC = () => {
 
       setURDFInput({
         mode: 'text',
-        content: textContent,
+        content: contentToParse,
       });
     } catch (error) {
       console.error('Failed to parse URDF:', error);
-      alert('Failed to parse URDF content. Please check the XML format.');
+      alert(t.alerts.parseError);
     }
   };
 
@@ -84,6 +88,18 @@ const AppContent: React.FC = () => {
 
   const handleClear = () => {
     setTextContent('');
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([textContent], { type: 'text/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = urdfInput?.fileName || 'robot.urdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -103,6 +119,7 @@ const AppContent: React.FC = () => {
               onLoad={handleTextLoad}
               onFormat={handleFormat}
               onClear={handleClear}
+              onExport={handleExport}
             />
           )}
 
@@ -120,9 +137,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <RobotProvider>
-      <AppContent />
-    </RobotProvider>
+    <LanguageProvider>
+      <RobotProvider>
+        <AppContent />
+      </RobotProvider>
+    </LanguageProvider>
   );
 };
 

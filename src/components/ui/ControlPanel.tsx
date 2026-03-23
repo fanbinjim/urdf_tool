@@ -1,14 +1,16 @@
 import React from 'react';
 import { useRobot } from '../../context/RobotContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const ControlPanel: React.FC = () => {
   const { robotState, updateJointValue, resetJoints } = useRobot();
+  const { t } = useLanguage();
 
   if (!robotState) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Joint Control</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">Load a URDF file to control joints</p>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{t.controlPanel.title}</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t.controlPanel.loadURDF}</p>
       </div>
     );
   }
@@ -20,17 +22,17 @@ export const ControlPanel: React.FC = () => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Joint Control</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t.controlPanel.title}</h3>
         <button
           onClick={resetJoints}
           className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
-          Reset
+          {t.controlPanel.resetJoints}
         </button>
       </div>
 
       {movableJoints.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-gray-400">No movable joints found</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t.controlPanel.noMovableJoints}</p>
       ) : (
         <div className="space-y-3 max-h-64 overflow-y-auto">
           {movableJoints.map(joint => {

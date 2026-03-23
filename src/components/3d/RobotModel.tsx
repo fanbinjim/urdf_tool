@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import type { URDFLink as URDFLinkType, URDFJoint, Pose } from '../../types';
+import type { URDFLink as URDFLinkType, URDFJoint } from '../../types';
 
 interface RobotModelProps {
   robotState: {
@@ -47,7 +47,7 @@ const createMaterial = (material?: any): THREE.Material => {
   });
 };
 
-const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ visual, linkName, idx }) => {
+const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ visual }) => {
   const geometry = useMemo(() => createGeometry(visual.geometry), [visual.geometry]);
   const material = useMemo(() => createMaterial(visual.material), [visual.material]);
   
@@ -67,7 +67,11 @@ const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ 
   };
   
   return (
-    <group position={[threePos.x, threePos.y, threePos.z]} rotation={[threeRot.x, threeRot.y, threeRot.z]}>
+    <group 
+      key={`visual-${JSON.stringify(visual.origin)}`}
+      position={[threePos.x, threePos.y, threePos.z]} 
+      rotation={[threeRot.x, threeRot.y, threeRot.z]}
+    >
       <mesh geometry={geometry} material={material} />
     </group>
   );
@@ -92,7 +96,15 @@ const JointGroup: React.FC<{
     z: -urdfRot.x
   };
   
-  return <group position={[threePos.x, threePos.y, threePos.z]} rotation={[threeRot.x, threeRot.y, threeRot.z]}>{children}</group>;
+  return (
+    <group 
+      key={`joint-${joint.name}-${JSON.stringify(joint.origin)}`}
+      position={[threePos.x, threePos.y, threePos.z]} 
+      rotation={[threeRot.x, threeRot.y, threeRot.z]}
+    >
+      {children}
+    </group>
+  );
 };
 
 export const RobotModel: React.FC<RobotModelProps> = ({ robotState }) => {
@@ -130,7 +142,7 @@ export const RobotModel: React.FC<RobotModelProps> = ({ robotState }) => {
   }
 
   return (
-    <group>
+    <group key={`robot-${robotState.links.length}-${robotState.joints.length}`}>
       {renderLink(robotState.rootLink)}
     </group>
   );

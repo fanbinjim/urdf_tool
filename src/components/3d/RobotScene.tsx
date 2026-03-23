@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Text } from '@react-three/drei';
-import * as THREE from 'three';
 import { RobotModel } from './RobotModel';
 
 interface RobotSceneProps {
@@ -25,46 +24,33 @@ const AxisLabel: React.FC<{ position: [number, number, number]; label: string; c
 const CoordinateAxes: React.FC = () => {
   return (
     <group>
-      {/* URDF坐标系: X向前(红色), Y向左(绿色), Z向上(蓝色) */}
-      {/* Three.js坐标: X向右, Y向上, Z向后(观察者方向) */}
-      {/* 转换: URDF X → Three.js -Z, URDF Y → Three.js -X, URDF Z → Three.js Y */}
-      
-      {/* X轴 (URDF向前) - 在Three.js中是 -Z 方向 */}
       <line>
         <bufferGeometry>
           <bufferAttribute
+            args={[new Float32Array([0, 0, 0, 0, 0, -3]), 3]}
             attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, 0, 0, 0, 0, -3])}
-            itemSize={3}
           />
         </bufferGeometry>
         <lineBasicMaterial color="#ff0000" linewidth={2} />
       </line>
       <AxisLabel position={[0, 0, -3.2]} label="X" color="#ff0000" />
       
-      {/* Y轴 (URDF向左) - 在Three.js中是 -X 方向 */}
       <line>
         <bufferGeometry>
           <bufferAttribute
+            args={[new Float32Array([0, 0, 0, -3, 0, 0]), 3]}
             attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, 0, 0, -3, 0, 0])}
-            itemSize={3}
           />
         </bufferGeometry>
         <lineBasicMaterial color="#00ff00" linewidth={2} />
       </line>
       <AxisLabel position={[-3.2, 0, 0]} label="Y" color="#00ff00" />
       
-      {/* Z轴 (URDF向上) - 在Three.js中是 Y 方向 */}
       <line>
         <bufferGeometry>
           <bufferAttribute
+            args={[new Float32Array([0, 0, 0, 0, 3, 0]), 3]}
             attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, 0, 0, 0, 3, 0])}
-            itemSize={3}
           />
         </bufferGeometry>
         <lineBasicMaterial color="#0000ff" linewidth={2} />

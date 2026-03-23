@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRobot } from '../../context/RobotContext';
+import { useLanguage } from '../../context/LanguageContext';
 import type { URDFLink, URDFJoint } from '../../types';
 
 interface TreeNodeProps {
@@ -38,7 +39,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
   return (
     <div>
-      {/* Link节点 */}
       <div
         className="flex items-center"
         style={{ paddingLeft: `${level * 16}px` }}
@@ -72,10 +72,8 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         </button>
       </div>
 
-      {/* 子Joint和Link */}
       {isExpanded && childJoints.map(joint => (
         <div key={joint.name}>
-          {/* Joint节点 */}
           <div
             className="flex items-center"
             style={{ paddingLeft: `${(level + 1) * 16}px` }}
@@ -95,7 +93,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             </button>
           </div>
 
-          {/* 子Link */}
           {childLinks
             .filter(childLink => childLink.name === joint.child)
             .map(childLink => (
@@ -119,10 +116,10 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
 export const InfoPanel: React.FC = () => {
   const { robotState } = useRobot();
+  const { t } = useLanguage();
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  // URDF加载完成后，默认展开所有节点
   useEffect(() => {
     if (robotState) {
       setExpandedItems(new Set(robotState.links.map(l => l.name)));
@@ -154,8 +151,8 @@ export const InfoPanel: React.FC = () => {
   if (!robotState) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Robot Info</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">Load a URDF file to see robot info</p>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{t.infoPanel.title}</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t.infoPanel.loadURDF}</p>
       </div>
     );
   }
@@ -167,38 +164,38 @@ export const InfoPanel: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Robot Info</h3>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t.infoPanel.title}</h3>
       
       <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400 mb-4">
         <div className="flex justify-between">
-          <span>Links:</span>
+          <span>{t.infoPanel.links}:</span>
           <span className="font-medium text-gray-900 dark:text-white">{robotState.links.length}</span>
         </div>
         <div className="flex justify-between">
-          <span>Joints:</span>
+          <span>{t.infoPanel.joints}:</span>
           <span className="font-medium text-gray-900 dark:text-white">{robotState.joints.length}</span>
         </div>
         <div className="flex justify-between">
-          <span>Root Link:</span>
+          <span>{t.infoPanel.rootLink}:</span>
           <span className="font-medium text-gray-900 dark:text-white">{robotState.rootLink}</span>
         </div>
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-semibold text-gray-900 dark:text-white">Structure</h4>
+          <h4 className="text-xs font-semibold text-gray-900 dark:text-white">{t.infoPanel.structure}</h4>
           <div className="flex gap-1">
             <button
               onClick={expandAll}
               className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
             >
-              展开
+              {t.infoPanel.expandAll}
             </button>
             <button
               onClick={collapseAll}
               className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
             >
-              收缩
+              {t.infoPanel.collapseAll}
             </button>
           </div>
         </div>
@@ -220,17 +217,17 @@ export const InfoPanel: React.FC = () => {
 
       {selectedItem && (
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-          <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">Details</h4>
+          <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">{t.infoPanel.details}</h4>
           
           {selectedLink && (
             <div className="space-y-2 text-xs">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.name}:</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedLink.name}</span>
               </div>
               {selectedLink.inertial && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">Mass:</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.mass}:</span>
                   <span className="ml-2 text-gray-900 dark:text-white">
                     {selectedLink.inertial.mass?.toFixed(3)} kg
                   </span>
@@ -238,7 +235,7 @@ export const InfoPanel: React.FC = () => {
               )}
               {selectedLink.visual && selectedLink.visual.length > 0 && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">Visuals:</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.visuals}:</span>
                   <span className="ml-2 text-gray-900 dark:text-white">{selectedLink.visual.length}</span>
                 </div>
               )}
@@ -248,24 +245,24 @@ export const InfoPanel: React.FC = () => {
           {selectedJoint && (
             <div className="space-y-2 text-xs">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.name}:</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.name}</span>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.type}:</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.type}</span>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Parent:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.parent}:</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.parent}</span>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Child:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.child}:</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.child}</span>
               </div>
               {selectedJoint.limit && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">Range:</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.range}:</span>
                   <span className="ml-2 text-gray-900 dark:text-white">
                     [{selectedJoint.limit.lower?.toFixed(2)}, {selectedJoint.limit.upper?.toFixed(2)}]
                   </span>
