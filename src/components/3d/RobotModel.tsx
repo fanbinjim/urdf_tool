@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import type { URDFLink as URDFLinkType, URDFJoint } from '../../types';
 
 interface RobotModelProps {
@@ -10,6 +11,24 @@ interface RobotModelProps {
     rootLink: string;
   };
 }
+
+const loader = new STLLoader();
+
+const loadSTL = (filename: string): Promise<THREE.BufferGeometry> => {
+  return new Promise((resolve, reject) => {
+    loader.load(
+      filename,
+      (geometry) => {
+        resolve(geometry);
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading STL file:', error);
+        reject(error);
+      }
+    );
+  });
+};
 
 const createGeometry = (geometry: any): THREE.BufferGeometry => {
   if (geometry.box) {
@@ -25,6 +44,11 @@ const createGeometry = (geometry: any): THREE.BufferGeometry => {
   if (geometry.sphere) {
     const { radius } = geometry.sphere;
     return new THREE.SphereGeometry(radius, 32, 32);
+  }
+  
+  if (geometry.mesh) {
+    // For now, return a placeholder geometry until we implement async loading
+    return new THREE.BoxGeometry(0.1, 0.1, 0.1);
   }
   
   return new THREE.BoxGeometry(0.1, 0.1, 0.1);
@@ -47,8 +71,29 @@ const createMaterial = (material?: any): THREE.Material => {
   });
 };
 
-const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ visual }) => {
-  const geometry = useMemo(() => createGeometry(visual.geometry), [visual.geometry]);
+const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ visual, linkName, idx }) => {
+  const [geometry, setGeometry] = React.useState<THREE.BufferGeometry>(new THREE.BoxGeometry(0.1, 0.1, 0.1));
+  
+  React.useEffect(() => {
+    if (visual.geometry.mesh) {
+      const { filename } = visual.geometry.mesh;
+      // Construct the full path to the STL file
+      const basePath = window.location.href.replace(/index\.html$/, '');
+      const fullPath = `${basePath}${filename}`;
+      
+      loadSTL(fullPath)
+        .then((loadedGeometry) => {
+          setGeometry(loadedGeometry);
+        })
+        .catch((error) => {
+          console.error(`Error loading STL for link ${linkName}:`, error);
+        });
+    } else {
+      const newGeometry = createGeometry(visual.geometry);
+      setGeometry(newGeometry);
+    }
+  }, [visual.geometry, linkName]);
+  
   const material = useMemo(() => createMaterial(visual.material), [visual.material]);
   
   const urdfPos = visual.origin?.xyz || { x: 0, y: 0, z: 0 };
@@ -68,7 +113,7 @@ const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ 
   
   return (
     <group 
-      key={`visual-${JSON.stringify(visual.origin)}`}
+      key={`visual-${linkName}-${idx}`}
       position={[threePos.x, threePos.y, threePos.z]} 
       rotation={[threeRot.x, threeRot.y, threeRot.z]}
     >

@@ -18,6 +18,7 @@ const AppContent: React.FC = () => {
   const { t } = useLanguage();
   const [inputMode, setInputMode] = useState<InputMode>('file');
   const [textContent, setTextContent] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleFileLoad = (content: string, fileName: string, files?: File[]) => {
     try {
@@ -107,27 +108,44 @@ const AppContent: React.FC = () => {
       <Header />
       
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar>
-          <InputModeSwitch mode={inputMode} onModeChange={setInputMode} />
-          
-          {inputMode === 'file' ? (
-            <FileUploader onFileLoad={handleFileLoad} />
-          ) : (
-            <TextEditor
-              content={textContent}
-              onChange={handleTextChange}
-              onLoad={handleTextLoad}
-              onFormat={handleFormat}
-              onClear={handleClear}
-              onExport={handleExport}
-            />
+        <Sidebar collapsed={sidebarCollapsed}>
+          {!sidebarCollapsed && (
+            <>
+              <InputModeSwitch mode={inputMode} onModeChange={setInputMode} />
+              
+              {inputMode === 'file' ? (
+                <FileUploader onFileLoad={handleFileLoad} />
+              ) : (
+                <TextEditor
+                  content={textContent}
+                  onChange={handleTextChange}
+                  onLoad={handleTextLoad}
+                  onFormat={handleFormat}
+                  onClear={handleClear}
+                  onExport={handleExport}
+                />
+              )}
+
+              <ControlPanel />
+              <InfoPanel />
+            </>
           )}
-
-          <ControlPanel />
-          <InfoPanel />
         </Sidebar>
-
-        <MainContent>
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`fixed top-1/2 transform -translate-y-1/2 w-6 h-16 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-r-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 z-10 shadow-md ${sidebarCollapsed ? 'left-0' : 'left-96'}`}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg 
+            className={`w-5 h-5 text-gray-700 dark:text-gray-300 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+        </button>
+        <MainContent className="flex-1">
           <RobotScene robotState={robotState} />
         </MainContent>
       </div>

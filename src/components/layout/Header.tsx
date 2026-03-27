@@ -5,7 +5,7 @@ export const Header: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3 shadow-sm">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-0 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
@@ -18,7 +18,7 @@ export const Header: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
-            className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+            className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
           >
             {language === 'zh' ? 'EN' : '中文'}
           </button>
