@@ -1,10 +1,38 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useRobot } from '../../context/RobotContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export const ControlPanel: React.FC = () => {
   const { robotState, updateJointValue, resetJoints } = useRobot();
   const { t } = useLanguage();
+  const pendingUpdatesRef = useRef<Map<string, number>>(new Map());
+  const animationFrameRef = useRef<number | null>(null);
+
+  const flushUpdates = () => {
+    if (pendingUpdatesRef.current.size > 0) {
+      pendingUpdatesRef.current.forEach((value, jointName) => {
+        updateJointValue(jointName, value);
+      });
+      pendingUpdatesRef.current.clear();
+    }
+    animationFrameRef.current = null;
+  };
+
+  const scheduleUpdate = (jointName: string, value: number) => {
+    pendingUpdatesRef.current.set(jointName, value);
+    
+    if (!animationFrameRef.current) {
+      animationFrameRef.current = requestAnimationFrame(flushUpdates);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   if (!robotState) {
     return (
@@ -56,7 +84,7 @@ export const ControlPanel: React.FC = () => {
                   max={max}
                   step={0.01}
                   value={currentValue}
-                  onChange={(e) => updateJointValue(joint.name, parseFloat(e.target.value))}
+                  onChange={(e) => scheduleUpdate(joint.name, parseFloat(e.target.value))}
                   className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
                 />
                 <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">

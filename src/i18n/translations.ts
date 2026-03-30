@@ -87,8 +87,8 @@ export const translations: Record<Language, Translations> = {
       save: '保存',
       undo: '撤销',
       saveSuccess: '保存成功！URDF已更新',
-      xmlValid: '✓ XML 格式有效',
-      xmlInvalid: '✗ XML 格式无效',
+      xmlValid: '✓ 格式有效',
+      xmlInvalid: '✗ 格式无效',
     },
     controlPanel: {
       title: '控制面板',
@@ -146,8 +146,8 @@ export const translations: Record<Language, Translations> = {
       save: 'Save',
       undo: 'Undo',
       saveSuccess: 'Saved successfully! URDF updated',
-      xmlValid: '✓ XML format is valid',
-      xmlInvalid: '✗ XML format is invalid',
+      xmlValid: '✓ Format is valid',
+      xmlInvalid: '✗ Format is invalid',
     },
     controlPanel: {
       title: 'Control Panel',

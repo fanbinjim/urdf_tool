@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import JSZip from 'jszip';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface FileUploaderProps {
@@ -9,15 +10,57 @@ interface FileUploaderProps {
 export const FileUploader: React.FC<FileUploaderProps> = ({ onFileLoad }) => {
   const { t } = useLanguage();
   
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        onFileLoad(content, file.name, acceptedFiles);
-      };
-      reader.readAsText(file);
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    for (const file of acceptedFiles) {
+      if (file.name.endsWith('.zip')) {
+        // Handle zip file
+        try {
+          console.log('Processing zip file:', file.name);
+          const zip = new JSZip();
+          const zipContent = await zip.loadAsync(file);
+          
+          // Find URDF files in the zip
+          const urdfFiles: { name: string; content: string }[] = [];
+          const allFiles: File[] = [];
+          
+          // Process all files in the zip
+          for (const [, zipEntry] of Object.entries(zipContent.files)) {
+            if (!zipEntry.dir) {
+              // Read file content
+              const content = await zipEntry.async('blob');
+              const fileObject = new File([content], zipEntry.name, { type: content.type });
+              allFiles.push(fileObject);
+              
+              // Check if it's a URDF file
+              if (zipEntry.name.endsWith('.urdf') || zipEntry.name.endsWith('.xml')) {
+                const textContent = await zipEntry.async('string');
+                urdfFiles.push({ name: zipEntry.name, content: textContent });
+              }
+            }
+          }
+          
+          // Use the first URDF file found
+          if (urdfFiles.length > 0) {
+            const urdfFile = urdfFiles[0];
+            console.log('Found URDF file in zip:', urdfFile.name);
+            onFileLoad(urdfFile.content, urdfFile.name, allFiles);
+          } else {
+            console.error('No URDF file found in zip');
+            alert('No URDF file found in zip. Please include a .urdf or .xml file.');
+          }
+        } catch (error) {
+          console.error('Error processing zip file:', error);
+          alert('Error processing zip file. Please check the file and try again.');
+        }
+      } else if (file.name.endsWith('.urdf') || file.name.endsWith('.xml')) {
+        // Handle individual URDF file
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          onFileLoad(content, file.name, acceptedFiles);
+        };
+        reader.readAsText(file);
+      }
     }
   }, [onFileLoad]);
 
@@ -26,19 +69,16 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ onFileLoad }) => {
     accept: {
       'text/xml': ['.urdf', '.xml'],
       'application/zip': ['.zip'],
+      'application/sla': ['.stl'],
     },
-    multiple: false,
+    multiple: true,
   });
 
   return (
     <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
       <div
         {...getRootProps()}
-        className={`cursor-pointer transition-colors ${
-          isDragActive
-            ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-400'
-            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-        }`}
+        className={`cursor-pointer transition-colors ${isDragActive ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
       >
         <input {...getInputProps()} />
         <div className="text-center">
@@ -66,7 +106,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ onFileLoad }) => {
             )}
           </p>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-            {t.fileUploader.supports}
+            {t.fileUploader.supports} <br />
+            <span className="text-red-500">如urdf中有mesh文件，请打包成zip压缩包文件上传</span>
           </p>
         </div>
       </div>

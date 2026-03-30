@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { useRobot } from '../../context/RobotContext';
 import type { URDFLink as URDFLinkType, URDFJoint } from '../../types';
 
 interface RobotModelProps {
@@ -19,11 +20,13 @@ const loadSTL = (filename: string): Promise<THREE.BufferGeometry> => {
     loader.load(
       filename,
       (geometry) => {
+        const transform = new THREE.Matrix4();
+        transform.makeRotationX(-Math.PI / 2).multiply(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
+        geometry.applyMatrix4(transform);
         resolve(geometry);
       },
       undefined,
       (error) => {
-        console.error('Error loading STL file:', error);
         reject(error);
       }
     );
@@ -46,11 +49,6 @@ const createGeometry = (geometry: any): THREE.BufferGeometry => {
     return new THREE.SphereGeometry(radius, 32, 32);
   }
   
-  if (geometry.mesh) {
-    // For now, return a placeholder geometry until we implement async loading
-    return new THREE.BoxGeometry(0.1, 0.1, 0.1);
-  }
-  
   return new THREE.BoxGeometry(0.1, 0.1, 0.1);
 };
 
@@ -71,113 +69,139 @@ const createMaterial = (material?: any): THREE.Material => {
   });
 };
 
-const LinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = ({ visual, linkName, idx }) => {
-  const [geometry, setGeometry] = React.useState<THREE.BufferGeometry>(new THREE.BoxGeometry(0.1, 0.1, 0.1));
+const StaticLinkVisual: React.FC<{ visual: any; linkName: string; idx: number }> = React.memo(({ visual, linkName }) => {
+  const { getFileByPath, getSTLGeometry, setSTLGeometry } = useRobot();
+  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   
-  React.useEffect(() => {
-    if (visual.geometry.mesh) {
-      const { filename } = visual.geometry.mesh;
-      // Construct the full path to the STL file
-      const basePath = window.location.href.replace(/index\.html$/, '');
-      const fullPath = `${basePath}${filename}`;
-      
-      loadSTL(fullPath)
-        .then((loadedGeometry) => {
-          setGeometry(loadedGeometry);
-        })
-        .catch((error) => {
-          console.error(`Error loading STL for link ${linkName}:`, error);
-        });
-    } else {
-      const newGeometry = createGeometry(visual.geometry);
-      setGeometry(newGeometry);
-    }
-  }, [visual.geometry, linkName]);
+  useEffect(() => {
+    let isMounted = true;
+    
+    const loadGeometry = async () => {
+      if (visual.geometry.mesh) {
+        const { filename } = visual.geometry.mesh;
+        
+        const cached = getSTLGeometry(filename);
+        if (cached) {
+          if (isMounted) {
+            setGeometry(cached);
+            setIsLoaded(true);
+          }
+          return;
+        }
+        
+        const file = getFileByPath(filename);
+        if (file) {
+          const fileURL = URL.createObjectURL(file);
+          try {
+            const loadedGeometry = await loadSTL(fileURL);
+            setSTLGeometry(filename, loadedGeometry);
+            if (isMounted) {
+              setGeometry(loadedGeometry);
+              setIsLoaded(true);
+            }
+          } catch (error) {
+            console.error(`Error loading STL for link ${linkName}:`, error);
+          } finally {
+            URL.revokeObjectURL(fileURL);
+          }
+        }
+      } else {
+        const newGeometry = createGeometry(visual.geometry);
+        if (isMounted) {
+          setGeometry(newGeometry);
+          setIsLoaded(true);
+        }
+      }
+    };
+    
+    loadGeometry();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [visual.geometry, linkName, getFileByPath, getSTLGeometry, setSTLGeometry]);
   
   const material = useMemo(() => createMaterial(visual.material), [visual.material]);
   
-  const urdfPos = visual.origin?.xyz || { x: 0, y: 0, z: 0 };
-  const urdfRot = visual.origin?.rpy || { x: 0, y: 0, z: 0 };
+  const position = useMemo(() => {
+    const urdfPos = visual.origin?.xyz || { x: 0, y: 0, z: 0 };
+    return [-urdfPos.y, urdfPos.z, -urdfPos.x] as [number, number, number];
+  }, [visual.origin]);
   
-  const threePos = {
-    x: -urdfPos.y,
-    y: urdfPos.z,
-    z: -urdfPos.x
-  };
+  const rotation = useMemo(() => {
+    const urdfRot = visual.origin?.rpy || { x: 0, y: 0, z: 0 };
+    return [-urdfRot.y, urdfRot.z, -urdfRot.x] as [number, number, number];
+  }, [visual.origin]);
   
-  const threeRot = {
-    x: -urdfRot.y,
-    y: urdfRot.z,
-    z: -urdfRot.x
-  };
+  if (!isLoaded || !geometry) {
+    return null;
+  }
   
   return (
-    <group 
-      key={`visual-${linkName}-${idx}`}
-      position={[threePos.x, threePos.y, threePos.z]} 
-      rotation={[threeRot.x, threeRot.y, threeRot.z]}
-    >
+    <group position={position} rotation={rotation}>
       <mesh geometry={geometry} material={material} />
     </group>
   );
-};
+});
 
-const JointGroup: React.FC<{ 
+const JointGroupWithRef: React.FC<{
   joint: URDFJoint;
-  jointValues: Map<string, number>;
+  jointValue: number;
   children: React.ReactNode;
-}> = ({ joint, jointValues, children }) => {
-  const urdfPos = joint.origin?.xyz || { x: 0, y: 0, z: 0 };
-  const urdfRot = joint.origin?.rpy || { x: 0, y: 0, z: 0 };
+}> = React.memo(({ joint, jointValue, children }) => {
+  const rotationGroupRef = useRef<THREE.Group>(null);
   
-  const jointValue = jointValues.get(joint.name) || 0;
+  const position = useMemo(() => {
+    const urdfPos = joint.origin?.xyz || { x: 0, y: 0, z: 0 };
+    return [-urdfPos.y, urdfPos.z, -urdfPos.x] as [number, number, number];
+  }, [joint.origin]);
   
-  const threePos = {
-    x: -urdfPos.y,
-    y: urdfPos.z,
-    z: -urdfPos.x
-  };
+  const rotation = useMemo(() => {
+    const urdfRot = joint.origin?.rpy || { x: 0, y: 0, z: 0 };
+    return [-urdfRot.y, urdfRot.z, -urdfRot.x] as [number, number, number];
+  }, [joint.origin]);
   
-  const threeRot = {
-    x: -urdfRot.y,
-    y: urdfRot.z,
-    z: -urdfRot.x
-  };
+  const axis = useMemo(() => {
+    const jointAxis = joint.axis || { x: 0, y: 0, z: 1 };
+    return {
+      x: -jointAxis.y,
+      y: jointAxis.z,
+      z: -jointAxis.x
+    };
+  }, [joint.axis]);
   
-  const jointAxis = joint.axis || { x: 0, y: 0, z: 1 };
-  const threeAxis = {
-    x: -jointAxis.y,
-    y: jointAxis.z,
-    z: -jointAxis.x
-  };
+  useEffect(() => {
+    if (rotationGroupRef.current) {
+      rotationGroupRef.current.rotation.set(
+        axis.x * jointValue,
+        axis.y * jointValue,
+        axis.z * jointValue
+      );
+    }
+  }, [jointValue, axis]);
+  
+  const isRotatable = joint.type === 'revolute' || joint.type === 'continuous' || joint.type === 'prismatic';
   
   return (
-    <group 
-      key={`joint-${joint.name}-${JSON.stringify(joint.origin)}-${jointValue}`}
-      position={[threePos.x, threePos.y, threePos.z]} 
-      rotation={[threeRot.x, threeRot.y, threeRot.z]}
-    >
-      {joint.type === 'revolute' || joint.type === 'continuous' || joint.type === 'prismatic' ? (
-        <group rotation={[threeAxis.x * jointValue, threeAxis.y * jointValue, threeAxis.z * jointValue]}>
-          {children}
-        </group>
+    <group position={position} rotation={rotation}>
+      {isRotatable ? (
+        <group ref={rotationGroupRef}>{children}</group>
       ) : (
         children
       )}
     </group>
   );
-};
+});
 
 export const RobotModel: React.FC<RobotModelProps> = ({ robotState }) => {
   const linkMap = useMemo(() => {
     const map = new Map<string, URDFLinkType>();
-    robotState.links.forEach(link => {
-      map.set(link.name, link);
-    });
+    robotState.links.forEach(link => map.set(link.name, link));
     return map;
   }, [robotState.links]);
 
-  const renderLink = (linkName: string): React.ReactNode => {
+  const renderLink = useCallback((linkName: string): React.ReactNode => {
     const link = linkMap.get(linkName);
     if (!link) return null;
 
@@ -186,24 +210,36 @@ export const RobotModel: React.FC<RobotModelProps> = ({ robotState }) => {
     return (
       <group key={linkName}>
         {link.visual?.map((visual, idx) => (
-          <LinkVisual key={`${linkName}-visual-${idx}`} visual={visual} linkName={linkName} idx={idx} />
+          <StaticLinkVisual 
+            key={`${linkName}-visual-${idx}`} 
+            visual={visual} 
+            linkName={linkName} 
+            idx={idx} 
+          />
         ))}
         
-        {childJoints.map(joint => (
-          <JointGroup key={joint.name} joint={joint} jointValues={robotState.jointValues}>
-            {renderLink(joint.child)}
-          </JointGroup>
-        ))}
+        {childJoints.map(joint => {
+          const jointValue = robotState.jointValues.get(joint.name) || 0;
+          return (
+            <JointGroupWithRef 
+              key={joint.name} 
+              joint={joint} 
+              jointValue={jointValue}
+            >
+              {renderLink(joint.child)}
+            </JointGroupWithRef>
+          );
+        })}
       </group>
     );
-  };
+  }, [linkMap, robotState.joints, robotState.jointValues]);
 
   if (!robotState.rootLink) {
     return null;
   }
 
   return (
-    <group key={`robot-${robotState.links.length}-${robotState.joints.length}-${Array.from(robotState.jointValues.entries()).join('-')}`}>
+    <group key="robot-root">
       {renderLink(robotState.rootLink)}
     </group>
   );
