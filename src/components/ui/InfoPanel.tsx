@@ -168,15 +168,15 @@ export const InfoPanel: React.FC = () => {
       
       <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400 mb-4">
         <div className="flex justify-between">
-          <span>{t.infoPanel.links}:</span>
+          <span>{t.infoPanel.links}</span>
           <span className="font-medium text-gray-900 dark:text-white">{robotState.links.length}</span>
         </div>
         <div className="flex justify-between">
-          <span>{t.infoPanel.joints}:</span>
+          <span>{t.infoPanel.joints}</span>
           <span className="font-medium text-gray-900 dark:text-white">{robotState.joints.length}</span>
         </div>
         <div className="flex justify-between">
-          <span>{t.infoPanel.rootLink}:</span>
+          <span>{t.infoPanel.rootLink}</span>
           <span className="font-medium text-gray-900 dark:text-white">{robotState.rootLink}</span>
         </div>
       </div>
@@ -222,12 +222,12 @@ export const InfoPanel: React.FC = () => {
           {selectedLink && (
             <div className="space-y-2 text-xs">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.name}:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.name}</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedLink.name}</span>
               </div>
               {selectedLink.inertial && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.mass}:</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.mass}</span>
                   <span className="ml-2 text-gray-900 dark:text-white">
                     {selectedLink.inertial.mass?.toFixed(3)} kg
                   </span>
@@ -235,7 +235,7 @@ export const InfoPanel: React.FC = () => {
               )}
               {selectedLink.visual && selectedLink.visual.length > 0 && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.visuals}:</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.visuals}</span>
                   <span className="ml-2 text-gray-900 dark:text-white">{selectedLink.visual.length}</span>
                 </div>
               )}
@@ -245,24 +245,24 @@ export const InfoPanel: React.FC = () => {
           {selectedJoint && (
             <div className="space-y-2 text-xs">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.name}:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.name}</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.name}</span>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.type}:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.type}</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.type}</span>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.parent}:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.parent}</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.parent}</span>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.child}:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.child}</span>
                 <span className="ml-2 text-gray-900 dark:text-white">{selectedJoint.child}</span>
               </div>
               {selectedJoint.limit && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.range}:</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t.infoPanel.range}</span>
                   <span className="ml-2 text-gray-900 dark:text-white">
                     [{selectedJoint.limit.lower?.toFixed(2)}, {selectedJoint.limit.upper?.toFixed(2)}]
                   </span>
