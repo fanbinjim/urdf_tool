@@ -150,7 +150,7 @@ const JointGroupWithRef: React.FC<{
   jointValue: number;
   children: React.ReactNode;
 }> = React.memo(({ joint, jointValue, children }) => {
-  const rotationGroupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<THREE.Group>(null);
   
   const position = useMemo(() => {
     const urdfPos = joint.origin?.xyz || { x: 0, y: 0, z: 0 };
@@ -172,21 +172,33 @@ const JointGroupWithRef: React.FC<{
   }, [joint.axis]);
   
   useEffect(() => {
-    if (rotationGroupRef.current) {
-      rotationGroupRef.current.rotation.set(
-        axis.x * jointValue,
-        axis.y * jointValue,
-        axis.z * jointValue
-      );
+    if (groupRef.current) {
+      if (joint.type === 'prismatic') {
+        // For prismatic joints, update position along the axis
+        groupRef.current.position.set(
+          position[0] + axis.x * jointValue,
+          position[1] + axis.y * jointValue,
+          position[2] + axis.z * jointValue
+        );
+      } else if (joint.type === 'revolute' || joint.type === 'continuous') {
+        // For revolute joints, update rotation around the axis
+        groupRef.current.rotation.set(
+          axis.x * jointValue,
+          axis.y * jointValue,
+          axis.z * jointValue
+        );
+      }
     }
-  }, [jointValue, axis]);
+  }, [jointValue, axis, joint.type, position]);
   
-  const isRotatable = joint.type === 'revolute' || joint.type === 'continuous' || joint.type === 'prismatic';
+  const isMovable = joint.type === 'revolute' || joint.type === 'continuous' || joint.type === 'prismatic';
   
   return (
-    <group position={position} rotation={rotation}>
-      {isRotatable ? (
-        <group ref={rotationGroupRef}>{children}</group>
+    <group position={joint.type === 'prismatic' ? [0, 0, 0] : position} rotation={rotation}>
+      {isMovable ? (
+        <group ref={groupRef}>
+          {children}
+        </group>
       ) : (
         children
       )}

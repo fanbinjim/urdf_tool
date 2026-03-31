@@ -75,7 +75,7 @@ export const ControlPanel: React.FC = () => {
                     {joint.name}
                   </label>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {currentValue.toFixed(3)} rad
+                    {currentValue.toFixed(3)} {joint.type === 'prismatic' ? 'm' : 'rad'}
                   </span>
                 </div>
                 <input
