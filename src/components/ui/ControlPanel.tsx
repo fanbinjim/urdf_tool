@@ -62,7 +62,7 @@ export const ControlPanel: React.FC = () => {
       {movableJoints.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">{t.controlPanel.noMovableJoints}</p>
       ) : (
-        <div className="space-y-3 max-h-64 overflow-y-auto">
+        <div className="space-y-3 max-h-96 overflow-y-auto">
           {movableJoints.map(joint => {
             const currentValue = robotState.jointValues.get(joint.name) || 0;
             const min = joint.limit?.lower ?? (joint.type === 'continuous' ? -Math.PI : 0);
